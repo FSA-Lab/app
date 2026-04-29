@@ -1,0 +1,4 @@
+# Ignore all local files and directories that contain .local in their name
+*.local
+*.local.*
+*.local/
