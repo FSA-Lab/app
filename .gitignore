@@ -2,3 +2,6 @@
 *.local
 *.local.*
 *.local/
+
+node_modules/
+dist/

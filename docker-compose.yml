@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  kong:
+    image: kong:latest
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+    volumes:
+      - ./infra/kong.yml:/etc/kong/kong.yml
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: cicd
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    ports:
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+
+  servicebus:
+    image: mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
+    environment:
+      - ACCEPT_EULA=Y
+    ports:
+      - "5672:5672"
+
+  auth-service:
+    build: ./app/auth
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/cicd
+    ports:
+      - "7071:80"
+
+  import-service:
+    build: ./app/import
+    environment:
+      - SERVICEBUS_CONNECTION_STRING=Endpoint=sb://servicebus;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=key
+    ports:
+      - "7072:80"
+
+  export-service:
+    build: ./app/export
+    environment:
+      - SERVICEBUS_CONNECTION_STRING=Endpoint=sb://servicebus;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=key
+    ports:
+      - "7073:80"
+
+  db-service:
+    build: ./app/db-service
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/cicd
+      - AzureWebJobsStorage=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;
+      - SERVICEBUS_CONNECTION_STRING=Endpoint=sb://servicebus;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=key
+    ports:
+      - "7074:80"
+
+  email-service:
+    build: ./app/email
+    environment:
+      - RESEND_API_KEY=re_dummy
+      - SERVICEBUS_CONNECTION_STRING=Endpoint=sb://servicebus;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=key
+    ports:
+      - "7075:80"
+
+volumes:
+  postgres_data:

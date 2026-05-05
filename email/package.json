@@ -1,0 +1,19 @@
+{
+  "name": "email",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf dist",
+    "start": "func start"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.0.0",
+    "resend": "^3.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "rimraf": "^5.0.0"
+  }
+}

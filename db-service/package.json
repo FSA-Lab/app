@@ -1,0 +1,21 @@
+{
+  "name": "db-service",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf dist",
+    "start": "func start"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.0.0",
+    "@azure/service-bus": "^7.9.5",
+    "@azure/storage-blob": "^12.31.0",
+    "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "rimraf": "^5.0.0",
+    "typescript": "^5.0.0"
+  }
+}
