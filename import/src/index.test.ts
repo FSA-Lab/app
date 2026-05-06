@@ -36,14 +36,16 @@ function setImportEnv(): void {
 
 function createToken(overrides: Record<string, unknown> = {}): string {
     const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
-    const body = Buffer.from(JSON.stringify({
-        sub: "user@example.com",
-        email: "user@example.com",
-        iss: "test-issuer",
-        aud: "test-audience",
-        exp: Math.floor(Date.now() / 1000) + 60,
-        ...overrides,
-    })).toString("base64url");
+    const body = Buffer.from(
+        JSON.stringify({
+            sub: "user@example.com",
+            email: "user@example.com",
+            iss: "test-issuer",
+            aud: "test-audience",
+            exp: Math.floor(Date.now() / 1000) + 60,
+            ...overrides,
+        }),
+    ).toString("base64url");
     const signature = createHmac("sha256", "test-secret").update(`${header}.${body}`).digest("base64url");
     return `${header}.${body}.${signature}`;
 }
@@ -123,11 +125,14 @@ describe("importHandler", () => {
     it("rejects oversized request bodies", async () => {
         const { importHandler } = await import("./index");
 
-        const response = await importHandler(request("{}", {
-            authorization: `Bearer ${createToken()}`,
-            "content-type": "application/json",
-            "content-length": "2048",
-        }), context());
+        const response = await importHandler(
+            request("{}", {
+                authorization: `Bearer ${createToken()}`,
+                "content-type": "application/json",
+                "content-length": "2048",
+            }),
+            context(),
+        );
 
         expect(response.status).toBe(413);
     });
@@ -136,10 +141,13 @@ describe("importHandler", () => {
         const { importHandler } = await import("./index");
         const body = JSON.stringify({ amount: 10, description: "Lunch" });
 
-        const response = await importHandler(request(body, {
-            "content-type": "application/json",
-            "content-length": String(Buffer.byteLength(body)),
-        }), context());
+        const response = await importHandler(
+            request(body, {
+                "content-type": "application/json",
+                "content-length": String(Buffer.byteLength(body)),
+            }),
+            context(),
+        );
 
         expect(response.status).toBe(401);
         expect(response.body).toBe("Unauthorized");
@@ -176,9 +184,15 @@ describe("importHandler", () => {
         const { importHandler } = await import("./index");
         const body = "amount,description\n1,A\n2,B\n3,C";
 
-        const response = await importHandler(request(body, authorizedHeaders(body, {
-            "content-type": "text/csv",
-        })), context());
+        const response = await importHandler(
+            request(
+                body,
+                authorizedHeaders(body, {
+                    "content-type": "text/csv",
+                }),
+            ),
+            context(),
+        );
 
         expect(response.status).toBe(400);
         expect(response.body).toBe("Import is limited to 2 records");

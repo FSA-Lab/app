@@ -58,7 +58,10 @@ function verifyAuthorization(request: HttpRequest): TokenPayload {
         const expected = createHmac("sha256", jwtSecret).update(`${header}.${body}`).digest("base64url");
         const actualSignature = Buffer.from(signature);
         const expectedSignature = Buffer.from(expected);
-        if (actualSignature.length !== expectedSignature.length || !timingSafeEqual(actualSignature, expectedSignature)) {
+        if (
+            actualSignature.length !== expectedSignature.length ||
+            !timingSafeEqual(actualSignature, expectedSignature)
+        ) {
             throw new Error("Invalid token signature");
         }
 
@@ -180,7 +183,11 @@ export async function importHandler(request: HttpRequest, context: InvocationCon
 
         return {
             status: 202,
-            jsonBody: { message: `Import initiated for ${records.length} records.`, count: records.length, requestedBy: user.email },
+            jsonBody: {
+                message: `Import initiated for ${records.length} records.`,
+                count: records.length,
+                requestedBy: user.email,
+            },
         };
     } catch (error: any) {
         context.error("Import Error:", error);
@@ -191,8 +198,8 @@ export async function importHandler(request: HttpRequest, context: InvocationCon
     }
 }
 
-app.http('import', {
-    methods: ['POST'],
-    authLevel: 'anonymous',
-    handler: importHandler
+app.http("import", {
+    methods: ["POST"],
+    authLevel: "anonymous",
+    handler: importHandler,
 });

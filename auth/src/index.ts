@@ -53,7 +53,10 @@ function verifyJwt(token: string): TokenPayload {
         const expected = createHmac("sha256", jwtSecret).update(`${header}.${body}`).digest("base64url");
         const actualSignature = Buffer.from(signature);
         const expectedSignature = Buffer.from(expected);
-        if (actualSignature.length !== expectedSignature.length || !timingSafeEqual(actualSignature, expectedSignature)) {
+        if (
+            actualSignature.length !== expectedSignature.length ||
+            !timingSafeEqual(actualSignature, expectedSignature)
+        ) {
             throw new Error("Invalid token signature");
         }
 
@@ -93,7 +96,7 @@ function checkRateLimit(identifier: string): HttpResponseInit | null {
 async function issueToken(request: HttpRequest): Promise<HttpResponseInit> {
     let body: { email?: string; password?: string };
     try {
-        body = await request.json() as { email?: string; password?: string };
+        body = (await request.json()) as { email?: string; password?: string };
     } catch {
         return { status: 400, body: "Invalid JSON body" };
     }
@@ -173,9 +176,9 @@ export async function authHandler(request: HttpRequest, context: InvocationConte
     }
 }
 
-app.http('auth', {
-    route: 'auth/{*restOfPath}',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    authLevel: 'anonymous',
-    handler: authHandler
+app.http("auth", {
+    route: "auth/{*restOfPath}",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    authLevel: "anonymous",
+    handler: authHandler,
 });

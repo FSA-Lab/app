@@ -41,18 +41,18 @@ export async function emailHandler(message: any, context: InvocationContext): Pr
         await resend.emails.send({
             from: senderEmail,
             to: message.recipientEmail,
-            subject: String(message.subject || 'Notification'),
-            html: html
+            subject: String(message.subject || "Notification"),
+            html: html,
         });
-        context.log('Email sent successfully.');
+        context.log("Email sent successfully.");
     } catch (error) {
-        context.error('Error sending email:', error);
+        context.error("Error sending email:", error);
         throw error;
     }
 }
 
-app.serviceBusQueue('emailQueue', {
-    connection: 'ServiceBusConnection',
-    queueName: 'email-queue',
-    handler: emailHandler
+app.serviceBusQueue("emailQueue", {
+    connection: "ServiceBusConnection",
+    queueName: "email-queue",
+    handler: emailHandler,
 });

@@ -32,17 +32,20 @@ let schemaReady: Promise<void> | undefined;
 
 async function ensureSchema(): Promise<void> {
     if (!schemaReady) {
-        schemaReady = pool.query(`
+        schemaReady = pool
+            .query(`
             CREATE TABLE IF NOT EXISTS transactions (
                 id SERIAL PRIMARY KEY,
                 amount DECIMAL NOT NULL,
                 description TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        `).then(() => undefined).catch((error) => {
-            schemaReady = undefined;
-            throw error;
-        });
+        `)
+            .then(() => undefined)
+            .catch((error) => {
+                schemaReady = undefined;
+                throw error;
+            });
     }
 
     return schemaReady;
@@ -87,10 +90,10 @@ export async function dbImportHandler(message: any, context: InvocationContext):
 
     try {
         await ensureSchema();
-        await client.query(
-            "INSERT INTO transactions (amount, description) VALUES ($1, $2)",
-            [record.amount, record.description]
-        );
+        await client.query("INSERT INTO transactions (amount, description) VALUES ($1, $2)", [
+            record.amount,
+            record.description,
+        ]);
         context.log("Inserted record into PostgreSQL.");
     } catch (err) {
         context.error("DB Error", err);
@@ -100,10 +103,10 @@ export async function dbImportHandler(message: any, context: InvocationContext):
     }
 }
 
-app.serviceBusQueue('dbImport', {
-    connection: 'ServiceBusConnection',
-    queueName: 'import-queue',
-    handler: dbImportHandler
+app.serviceBusQueue("dbImport", {
+    connection: "ServiceBusConnection",
+    queueName: "import-queue",
+    handler: dbImportHandler,
 });
 
 export async function dbExportHandler(message: any, context: InvocationContext): Promise<void> {
@@ -115,12 +118,16 @@ export async function dbExportHandler(message: any, context: InvocationContext):
         await ensureSchema();
         const res = await client.query("SELECT id, amount, description, created_at FROM transactions ORDER BY id");
         const header = ["id", "amount", "description", "created_at"].map(csvField).join(",");
-        const rows = res.rows.map((row: any) => [
-            row.id,
-            row.amount,
-            row.description,
-            row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
-        ].map(csvField).join(","));
+        const rows = res.rows.map((row: any) =>
+            [
+                row.id,
+                row.amount,
+                row.description,
+                row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+            ]
+                .map(csvField)
+                .join(","),
+        );
         const csv = [header, ...rows].join("\n");
 
         const containerClient = blobServiceClient.getContainerClient("exports");
@@ -138,7 +145,6 @@ export async function dbExportHandler(message: any, context: InvocationContext):
             recipientEmail: exportMessage.recipientEmail,
             requestedBy: exportMessage.requestedBy,
         });
-
     } catch (err: any) {
         context.error("DB/Blob Error", err);
         try {
@@ -158,8 +164,8 @@ export async function dbExportHandler(message: any, context: InvocationContext):
     }
 }
 
-app.serviceBusQueue('dbExport', {
-    connection: 'ServiceBusConnection',
-    queueName: 'export-queue',
-    handler: dbExportHandler
+app.serviceBusQueue("dbExport", {
+    connection: "ServiceBusConnection",
+    queueName: "export-queue",
+    handler: dbExportHandler,
 });

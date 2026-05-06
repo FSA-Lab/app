@@ -33,14 +33,16 @@ function setExportEnv(): void {
 
 function createToken(overrides: Record<string, unknown> = {}): string {
     const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
-    const body = Buffer.from(JSON.stringify({
-        sub: "user-id",
-        email: "user@example.com",
-        iss: "test-issuer",
-        aud: "test-audience",
-        exp: Math.floor(Date.now() / 1000) + 60,
-        ...overrides,
-    })).toString("base64url");
+    const body = Buffer.from(
+        JSON.stringify({
+            sub: "user-id",
+            email: "user@example.com",
+            iss: "test-issuer",
+            aud: "test-audience",
+            exp: Math.floor(Date.now() / 1000) + 60,
+            ...overrides,
+        }),
+    ).toString("base64url");
     const signature = createHmac("sha256", "test-secret").update(`${header}.${body}`).digest("base64url");
     return `${header}.${body}.${signature}`;
 }
@@ -105,10 +107,16 @@ describe("exportHandler", () => {
     it("sends authenticated export context to Service Bus", async () => {
         const { exportHandler } = await import("./index");
 
-        const response = await exportHandler(request({
-            authorization: `Bearer ${createToken()}`,
-            "content-type": "application/json",
-        }, { options: { format: "csv" } }), context());
+        const response = await exportHandler(
+            request(
+                {
+                    authorization: `Bearer ${createToken()}`,
+                    "content-type": "application/json",
+                },
+                { options: { format: "csv" } },
+            ),
+            context(),
+        );
 
         expect(response.status).toBe(202);
         expect(busMocks.createSender).toHaveBeenCalledWith("export-queue");
@@ -124,9 +132,12 @@ describe("exportHandler", () => {
         const { exportHandler } = await import("./index");
         busMocks.sendMessages.mockRejectedValue(new Error("connection string leaked"));
 
-        const response = await exportHandler(request({
-            authorization: `Bearer ${createToken()}`,
-        }), context());
+        const response = await exportHandler(
+            request({
+                authorization: `Bearer ${createToken()}`,
+            }),
+            context(),
+        );
 
         expect(response.status).toBe(503);
         expect(response.body).toBe("Export service is temporarily unavailable");

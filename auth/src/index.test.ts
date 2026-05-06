@@ -13,7 +13,7 @@ const pgMocks = vi.hoisted(() => ({
 vi.mock("pg", () => ({
     Pool: vi.fn().mockImplementation(function () {
         return {
-        query: pgMocks.query,
+            query: pgMocks.query,
         };
     }),
 }));
@@ -104,10 +104,7 @@ describe("authHandler", () => {
     it("returns 401 for malformed bearer tokens", async () => {
         const { authHandler } = await import("./index");
 
-        const response = await authHandler(
-            request("POST", "/auth/verify", undefined, "not-a-jwt"),
-            context(),
-        );
+        const response = await authHandler(request("POST", "/auth/verify", undefined, "not-a-jwt"), context());
 
         expect(response.status).toBe(401);
         expect(response.body).toBe("Invalid token");
@@ -115,10 +112,11 @@ describe("authHandler", () => {
 
     it("rate limits repeated token attempts per email", async () => {
         const { authHandler } = await import("./index");
-        const loginRequest = () => request("POST", "/auth/token", {
-            email: "user@example.com",
-            password: "wrong",
-        });
+        const loginRequest = () =>
+            request("POST", "/auth/token", {
+                email: "user@example.com",
+                password: "wrong",
+            });
 
         await authHandler(loginRequest(), context());
         await authHandler(loginRequest(), context());

@@ -45,7 +45,10 @@ function verifyAuthorization(request: HttpRequest): TokenPayload {
         const expected = createHmac("sha256", jwtSecret).update(`${header}.${body}`).digest("base64url");
         const actualSignature = Buffer.from(signature);
         const expectedSignature = Buffer.from(expected);
-        if (actualSignature.length !== expectedSignature.length || !timingSafeEqual(actualSignature, expectedSignature)) {
+        if (
+            actualSignature.length !== expectedSignature.length ||
+            !timingSafeEqual(actualSignature, expectedSignature)
+        ) {
             throw new Error("Invalid token signature");
         }
 
@@ -71,7 +74,7 @@ async function readExportOptions(request: HttpRequest): Promise<Record<string, u
     }
 
     try {
-        const body = await request.json() as { options?: Record<string, unknown> };
+        const body = (await request.json()) as { options?: Record<string, unknown> };
         return body.options && typeof body.options === "object" ? body.options : {};
     } catch {
         throw new HttpError(400, "Invalid JSON body");
@@ -113,8 +116,8 @@ export async function exportHandler(request: HttpRequest, context: InvocationCon
     }
 }
 
-app.http('export', {
-    methods: ['POST'],
-    authLevel: 'anonymous',
-    handler: exportHandler
+app.http("export", {
+    methods: ["POST"],
+    authLevel: "anonymous",
+    handler: exportHandler,
 });

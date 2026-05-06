@@ -1,0 +1,36 @@
+{
+    "name": "app",
+    "version": "1.0.0",
+    "description": "Quality tooling for app services",
+    "main": "index.js",
+    "directories": {
+        "doc": "docs"
+    },
+    "scripts": {
+        "test": "for service in auth import export db-service email; do (cd $service && npm test) || exit 1; done",
+        "lint": "biome lint .",
+        "format": "biome format --write .",
+        "format:check": "biome format .",
+        "check": "biome check .",
+        "check:write": "biome check --write .",
+        "test:typecheck": "for service in auth import export db-service email; do (cd $service && npm run test:typecheck) || exit 1; done",
+        "build": "for service in auth import export db-service email; do (cd $service && npm run build) || exit 1; done",
+        "verify": "npm run lint && npm run format:check && npm run test:typecheck && npm test && npm run build"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/FSA-Lab/app.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "commonjs",
+    "bugs": {
+        "url": "https://github.com/FSA-Lab/app/issues"
+    },
+    "homepage": "https://github.com/FSA-Lab/app#readme",
+    "devDependencies": {
+        "@biomejs/biome": "^2.4.14"
+    },
+    "private": true
+}

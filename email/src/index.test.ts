@@ -47,21 +47,27 @@ describe("emailHandler", () => {
     it("registers the email queue binding", async () => {
         await import("./index");
 
-        expect(azureMocks.serviceBusQueue).toHaveBeenCalledWith("emailQueue", expect.objectContaining({
-            connection: "ServiceBusConnection",
-            queueName: "email-queue",
-        }));
+        expect(azureMocks.serviceBusQueue).toHaveBeenCalledWith(
+            "emailQueue",
+            expect.objectContaining({
+                connection: "ServiceBusConnection",
+                queueName: "email-queue",
+            }),
+        );
     });
 
     it("sends success emails to the requested recipient", async () => {
         const { emailHandler } = await import("./index");
 
-        await emailHandler({
-            status: "success",
-            subject: "Export Completed",
-            file: "export.csv",
-            recipientEmail: "user@example.com",
-        }, context());
+        await emailHandler(
+            {
+                status: "success",
+                subject: "Export Completed",
+                file: "export.csv",
+                recipientEmail: "user@example.com",
+            },
+            context(),
+        );
 
         expect(resendMocks.send).toHaveBeenCalledWith({
             from: "sender@example.com",
@@ -74,11 +80,14 @@ describe("emailHandler", () => {
     it("escapes success email HTML values", async () => {
         const { emailHandler } = await import("./index");
 
-        await emailHandler({
-            status: "success",
-            file: "<script>alert(1)</script>",
-            recipientEmail: "user@example.com",
-        }, context());
+        await emailHandler(
+            {
+                status: "success",
+                file: "<script>alert(1)</script>",
+                recipientEmail: "user@example.com",
+            },
+            context(),
+        );
 
         expect(resendMocks.send.mock.calls[0][0].html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
     });
@@ -86,11 +95,14 @@ describe("emailHandler", () => {
     it("escapes failure email HTML values", async () => {
         const { emailHandler } = await import("./index");
 
-        await emailHandler({
-            status: "error",
-            error: "<b>failed</b>",
-            recipientEmail: "user@example.com",
-        }, context());
+        await emailHandler(
+            {
+                status: "error",
+                error: "<b>failed</b>",
+                recipientEmail: "user@example.com",
+            },
+            context(),
+        );
 
         expect(resendMocks.send.mock.calls[0][0].html).toContain("&lt;b&gt;failed&lt;/b&gt;");
     });
@@ -98,11 +110,16 @@ describe("emailHandler", () => {
     it("rejects messages without a valid recipient email", async () => {
         const { emailHandler } = await import("./index");
 
-        await expect(emailHandler({
-            status: "success",
-            file: "export.csv",
-            recipientEmail: "not-an-email",
-        }, context())).rejects.toThrow("Email message requires a valid recipientEmail");
+        await expect(
+            emailHandler(
+                {
+                    status: "success",
+                    file: "export.csv",
+                    recipientEmail: "not-an-email",
+                },
+                context(),
+            ),
+        ).rejects.toThrow("Email message requires a valid recipientEmail");
 
         expect(resendMocks.send).not.toHaveBeenCalled();
     });

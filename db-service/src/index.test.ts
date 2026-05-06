@@ -102,14 +102,20 @@ describe("db-service handlers", () => {
     it("registers import and export queue bindings", async () => {
         await import("./index");
 
-        expect(azureMocks.serviceBusQueue).toHaveBeenCalledWith("dbImport", expect.objectContaining({
-            connection: "ServiceBusConnection",
-            queueName: "import-queue",
-        }));
-        expect(azureMocks.serviceBusQueue).toHaveBeenCalledWith("dbExport", expect.objectContaining({
-            connection: "ServiceBusConnection",
-            queueName: "export-queue",
-        }));
+        expect(azureMocks.serviceBusQueue).toHaveBeenCalledWith(
+            "dbImport",
+            expect.objectContaining({
+                connection: "ServiceBusConnection",
+                queueName: "import-queue",
+            }),
+        );
+        expect(azureMocks.serviceBusQueue).toHaveBeenCalledWith(
+            "dbExport",
+            expect.objectContaining({
+                connection: "ServiceBusConnection",
+                queueName: "export-queue",
+            }),
+        );
     });
 
     it("rejects invalid import messages before opening a DB connection", async () => {
@@ -127,7 +133,9 @@ describe("db-service handlers", () => {
 
         await dbImportHandler({ amount: 12.5, description: "Invoice" }, context());
 
-        expect(pgMocks.poolQuery).toHaveBeenCalledWith(expect.stringContaining("CREATE TABLE IF NOT EXISTS transactions"));
+        expect(pgMocks.poolQuery).toHaveBeenCalledWith(
+            expect.stringContaining("CREATE TABLE IF NOT EXISTS transactions"),
+        );
         expect(pgMocks.clientQuery).toHaveBeenCalledWith(
             "INSERT INTO transactions (amount, description) VALUES ($1, $2)",
             [12.5, "Invoice"],
@@ -139,7 +147,9 @@ describe("db-service handlers", () => {
         const { dbImportHandler } = await import("./index");
         pgMocks.poolQuery.mockRejectedValueOnce(new Error("database starting"));
 
-        await expect(dbImportHandler({ amount: 1, description: "First" }, context())).rejects.toThrow("database starting");
+        await expect(dbImportHandler({ amount: 1, description: "First" }, context())).rejects.toThrow(
+            "database starting",
+        );
 
         pgMocks.poolQuery.mockResolvedValueOnce({ rows: [] });
         await dbImportHandler({ amount: 2, description: "Second" }, context());
@@ -153,8 +163,8 @@ describe("db-service handlers", () => {
         await dbExportHandler({ recipientEmail: "user@example.com", requestedBy: "user-id" }, context());
 
         expect(blobMocks.upload).toHaveBeenCalledWith(
-            "\"id\",\"amount\",\"description\",\"created_at\"",
-            Buffer.byteLength("\"id\",\"amount\",\"description\",\"created_at\""),
+            '"id","amount","description","created_at"',
+            Buffer.byteLength('"id","amount","description","created_at"'),
         );
         expect(busMocks.createSender).toHaveBeenCalledWith("email-queue");
         expect(busMocks.sentMessages[0].body).toMatchObject({
@@ -170,7 +180,7 @@ describe("db-service handlers", () => {
                 {
                     id: 1,
                     amount: "9.99",
-                    description: '=SUM(1,1)',
+                    description: "=SUM(1,1)",
                     created_at: new Date("2026-05-06T00:00:00.000Z"),
                 },
                 {
@@ -193,7 +203,9 @@ describe("db-service handlers", () => {
         const { dbExportHandler } = await import("./index");
         pgMocks.clientQuery.mockRejectedValueOnce(new Error("postgres://secret"));
 
-        await expect(dbExportHandler({ recipientEmail: "user@example.com" }, context())).rejects.toThrow("postgres://secret");
+        await expect(dbExportHandler({ recipientEmail: "user@example.com" }, context())).rejects.toThrow(
+            "postgres://secret",
+        );
 
         expect(busMocks.sentMessages[0].body).toMatchObject({
             status: "error",
