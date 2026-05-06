@@ -8,7 +8,7 @@
             "Name": "import-queue",
             "Properties": {
               "DeadLetteringOnMessageExpiration": true,
-              "DefaultMessageTimeToLive": "P7D",
+              "DefaultMessageTimeToLive": "PT1H",
               "DuplicateDetectionHistoryTimeWindow": "PT20S",
               "ForwardDeadLetteredMessagesTo": "",
               "ForwardTo": "",
@@ -22,7 +22,7 @@
             "Name": "export-queue",
             "Properties": {
               "DeadLetteringOnMessageExpiration": true,
-              "DefaultMessageTimeToLive": "P7D",
+              "DefaultMessageTimeToLive": "PT1H",
               "DuplicateDetectionHistoryTimeWindow": "PT20S",
               "ForwardDeadLetteredMessagesTo": "",
               "ForwardTo": "",
@@ -36,7 +36,7 @@
             "Name": "email-queue",
             "Properties": {
               "DeadLetteringOnMessageExpiration": true,
-              "DefaultMessageTimeToLive": "P7D",
+              "DefaultMessageTimeToLive": "PT1H",
               "DuplicateDetectionHistoryTimeWindow": "PT20S",
               "ForwardDeadLetteredMessagesTo": "",
               "ForwardTo": "",
