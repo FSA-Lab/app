@@ -10,5 +10,6 @@
     "skipLibCheck": true,
     "types": ["node"],
     "strict": false
-  }
+  },
+  "exclude": ["src/**/*.test.ts"]
 }
