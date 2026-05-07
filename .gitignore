@@ -6,5 +6,7 @@
 node_modules/
 dist/
 coverage/
+**/vitest.config.mjs
+**/vitest.config.mjs.map
 **/local.settings.json
 .env

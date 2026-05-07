@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "dist/index.js",
   "scripts": {
-    "build": "npm run clean && tsc",
+    "build": "npm run clean && tsc -p tsconfig.build.json",
     "clean": "rimraf dist",
     "start": "func start",
     "test": "vitest run --coverage src",
