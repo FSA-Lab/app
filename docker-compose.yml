@@ -1,0 +1,145 @@
+x-azurite-connection: &azurite_connection "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+x-servicebus-connection: &servicebus_connection "Endpoint=sb://servicebus;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
+
+services:
+  kong:
+    image: kong:latest
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+    volumes:
+      - ./infra/kong.yml:/etc/kong/kong.yml
+    ports:
+      - "8000:8000"
+      - "127.0.0.1:8001:8001"
+    depends_on:
+      - auth-service
+      - import-service
+      - export-service
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: cicd
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d cicd"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --skipApiVersionCheck
+    ports:
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+
+  servicebus:
+    image: mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
+    volumes:
+      - ./infra/servicebus-config.json:/ServiceBus_Emulator/ConfigFiles/Config.json
+    environment:
+      ACCEPT_EULA: "Y"
+      SQL_SERVER: sqledge
+      MSSQL_SA_PASSWORD: "Local_password123"
+      SQL_WAIT_INTERVAL: "15"
+      EMULATOR_HTTP_PORT: "5300"
+    ports:
+      - "5672:5672"
+      - "5300:5300"
+    depends_on:
+      - sqledge
+
+  sqledge:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Local_password123"
+
+  auth-service:
+    build: ./auth
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/cicd
+      AzureWebJobsStorage: *azurite_connection
+      JWT_SECRET: local-dev-secret
+      JWT_ISSUER: cicd-local-issuer
+      JWT_AUDIENCE: cicd-local
+      AUTH_PASSWORD: local-dev-password
+    ports:
+      - "127.0.0.1:7071:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      azurite:
+        condition: service_started
+
+  import-service:
+    build: ./import
+    environment:
+      ServiceBusConnection: *servicebus_connection
+      AzureWebJobsStorage: *azurite_connection
+      JWT_SECRET: local-dev-secret
+      JWT_ISSUER: cicd-local-issuer
+      JWT_AUDIENCE: cicd-local
+    ports:
+      - "127.0.0.1:7072:80"
+    depends_on:
+      - servicebus
+      - azurite
+
+  export-service:
+    build: ./export
+    environment:
+      ServiceBusConnection: *servicebus_connection
+      AzureWebJobsStorage: *azurite_connection
+      JWT_SECRET: local-dev-secret
+      JWT_ISSUER: cicd-local-issuer
+      JWT_AUDIENCE: cicd-local
+    ports:
+      - "127.0.0.1:7073:80"
+    depends_on:
+      - servicebus
+      - azurite
+
+  db-service:
+    build: ./db-service
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/cicd
+      AzureWebJobsStorage: *azurite_connection
+      ServiceBusConnection: *servicebus_connection
+    ports:
+      - "127.0.0.1:7074:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      servicebus:
+        condition: service_started
+      azurite:
+        condition: service_started
+
+  email-service:
+    build: ./email
+    environment:
+      RESEND_API_KEY: re_dummy
+      EMAIL_FROM: onboarding@resend.dev
+      ServiceBusConnection: *servicebus_connection
+      AzureWebJobsStorage: *azurite_connection
+    ports:
+      - "127.0.0.1:7075:80"
+    depends_on:
+      - servicebus
+      - azurite
+
+volumes:
+  postgres_data:

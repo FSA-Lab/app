@@ -1,0 +1,51 @@
+_format_version: "3.0"
+_transform: true
+
+services:
+  - name: auth-service
+    url: http://auth-service/api/auth
+    routes:
+      - name: auth-route
+        paths:
+          - /auth
+        strip_path: true
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 30
+          policy: local
+
+  - name: import-service
+    url: http://import-service/api/import
+    routes:
+      - name: import-route
+        paths:
+          - /import
+        strip_path: true
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
+
+  - name: export-service
+    url: http://export-service/api/export
+    routes:
+      - name: export-route
+        paths:
+          - /export
+        strip_path: true
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
+
+consumers:
+  - username: lab-client
+    jwt_secrets:
+      - key: cicd-local-issuer
+        secret: local-dev-secret
+        algorithm: HS256
